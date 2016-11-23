@@ -17,11 +17,11 @@
     *vendor*
         ...
 
-Die *LocalConfiguration.php* wird vom InstallTool geschrieben
-*AdditionalConfiguration.php* wird nach der LocalConfiguration.php geladen (erlaubt es, Werte zu überschreiben)
-Packagestates.php ist für vorhandene und geladene Extensions zuständig
+* Die `LocalConfiguration.php` wird vom InstallTool geschrieben
+* `AdditionalConfiguration.php` wird nach der `LocalConfiguration.php` geladen (erlaubt es, Werte zu überschreiben)
+* `Packagestates.php` ist für vorhandene und geladene Extensions zuständig
 
-Im *vendor* Ordner liegen Packete, die über Composer geladen wurden. Es ist sehr ungewöhnlich in einer nicht-Composer-Installation (unserer) einen *vendor* Ordner zu haben.
+Im `vendor` Ordner liegen Packete, die über Composer geladen wurden. Es ist sehr ungewöhnlich in einer nicht-Composer-Installation (unserer) einen `vendor` Ordner zu haben.
 
 ## Extensions
 
@@ -64,7 +64,13 @@ Im *vendor* Ordner liegen Packete, die über Composer geladen wurden. Es ist seh
 
     Configuration
         TCA
+
+Die Dateien hier werden gecached. Gute Konvention (und unterstützt) wird es, die Dateien hier mit ###TABELLEN_NAME###.php hinzulegen und nur einen Array zu returnen
+
         FlexForms
+
+FlexForms sind so etwas wie Mini-TCAs in XML Form für einzelne Plugins. Sie erlauben eine Plugin-spezifische für den Redakteur pflegbare Konfiguration. Da dabei XML in der Datenbank gespeichert wird ist es aber auch eine gute Fehlerquelle.
+
         (realurl)
         (TypoScript)
     Migration
@@ -72,7 +78,18 @@ Im *vendor* Ordner liegen Packete, die über Composer geladen wurden. Es ist seh
             ClassAliasMap.php
     Resources
         Public
+            CSS
+            JS
+            ...
+
+Der `Public` Order und alle darunter werden genutzt um zugängliche Dateien anzubieten
+
         Private
+            Templates
+            Layouts
+            Partials
+
+Der `Private` Ordner und alle darunter sind nicht für die direkte Anzeige im Frontend bestimmt. Richtig konfiguriert verhindert dies schon die `.htaccess`.
 
 TYPO3 Extensions folgen heutzutage dem Klassen-Schema PSR4
 
@@ -82,27 +99,39 @@ In Zukunft: Für Composer-Classloading (sinnvoll ab TYPO3 7.6) braucht man eine 
 
 ## Konzepte
 
-TYPO3 geht immer von einer Baumstruktur aus (die durch die Tabelle pages festgelegt wird)
-Alle Inhaltselemente (*tt_content*) liegen innerhalb von Seiten
-Alle Datensätze sollten innerhalb von Seiten liegen (storagePid)
+* TYPO3 geht immer von einer Baumstruktur aus (die durch die Tabelle pages festgelegt wird)
+* Alle Inhaltselemente (*tt_content*) liegen innerhalb von Seiten
+* Alle Datensätze sollten innerhalb von Seiten liegen (storagePid)
+* [Versionierung](http://www.schmutt.de/303/eigene-extension-mit-workspace-versionierung/) und Lokalisierung (z.Z. meistens über Overlay)
+
+### Sicherheit
+
+* Im Backend kennt TYPO3 ein Berechtigungskonzept ähnlich zu Unix (User, Group, Any)
+* In einer "normalen" TYPO3 Installation sollte es einem Redakteur (nicht-Admin) nicht möglich sein, Sicherheitsprobleme zu verursachen (z.B. XSS)
+** Für TYPO3 gilt eine Extension // ein Feature als unsicher, wenn ein Redakteur doch für Sicherheitsprobleme sorgen kann
+** Es gibt ein Security-Team und regelmäßig audits von Extensions; Einen klaren Prozess für Sicherheitslücken
 
 ### Classloading
 
 * PSR4
-** Besonderheit: Namespace TYPO3\CMS
-* Singletons
-* GeneralUtility::makeInstance()
-* ObjectManager->get()
-* @inject bzw injectX
-** Dependency-Injection (nur im Extbase-Kontext)
+  * Besonderheit: Namespace `TYPO3\CMS`
+  * idR in Extensions: `VendorName\AaaAaa\B\C` entspricht dann der Datei `typo3conf/ext/aaa_aaa/B/C.php`
+* In TYPO3 7.6+ kann man das über einen Eintrag in der `ext_emconf.php' oder der `composer.json` beieinflussen [Helhum](http://insight.helhum.io/post/130876393595/how-to-configure-class-loading-for-extensions-in). Für ältere Versionen gibt es das Konzept `ext_autoload.php`
+* [Singletons](https://docs.typo3.org/typo3cms/CodingGuidelinesReference/CodingBestPractices/Singletons/Index.html): `\TYPO3\CMS\Core\SingletonInterface`
+* `\TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance()`
+* `\TYPO3\CMS\Extbase\ObjectManager->get(BlaBla::class)`
+* `@inject` bzw `injectX`
+  * Dependency-Injection (nur im Extbase-Kontext)
 * Composer
 
-### Scheduler
+[Helhum](http://insight.helhum.io/post/130812561790/changes-in-class-loading-in-typo3-7lts)
 
-* Wird im CLI Kontext ausgeführt (der ist "ähnlich" wie der Backend-Kontext)
+### [Scheduler](https://docs.typo3.org/typo3cms/extensions/scheduler/Installation/SchedulerShellScript/Index.html)
+
+* Wird im *CLI* Kontext ausgeführt (der ist "ähnlich" wie der Backend-Kontext)
 * Es macht einen großen Unterschied, ob man einen Task "von Hand" anstößt oder von der Kommandozeile (typo3/cli_dispatch.phpsh scheduler)
 * Es gibt "Tasks" und "Commands"
-** "Commands" werden vom Extbase-Task ausgeführt. Sie bieten keine Validierung zur Konfigurationszeit, lassen sich aber auch auf der Kommandozeile ausführen
+ * "Commands" werden vom Extbase-Task ausgeführt. Sie bieten keine Validierung zur Konfigurationszeit, lassen sich aber auch auf der Kommandozeile ausführen
 
 → market
 
@@ -114,27 +143,27 @@ Alle Datensätze sollten innerhalb von Seiten liegen (storagePid)
 * Es gibt auch S3 Provider
 * Naiver Indexer
 * Varianten von Quelldateien
-** *Processing Instructions* - z.B. Verkleinern, Schwarz-Weiß, Wasserzeichen
+  * *Processing Instructions* - z.B. Verkleinern, Schwarz-Weiß, Wasserzeichen
 
 ### [TCA](https://docs.typo3.org/typo3cms/TCAReference/)
 
 Bestimmt wie das Backend Datensätze darstellt. Ermöglicht es TYPO3, Relationen zwischen Tabellen zu verstehen. Bei Extbase wird es auch für das Mapping auf Objekte benutzt
 
-### typolink
+### [typolink](https://docs.typo3.org/typo3cms/TyposcriptReference/Functions/Typolink/Index.html)
 
 Zentrale Stelle, um Links fürs Frontend zu generieren
 * funktioniert auch nur im Frontend zuverlässig
 * in TYPO3-RTE
 
-### Hooks
+### [Hooks](https://docs.typo3.org/typo3cms/CoreApiReference/ApiOverview/Hooks/Concept/Index.html)
 
 * Früher über "Hooks" (z.B. Realurl)
 * Heute öfters über Signal-Slot (z.B. extbase)
 
-### Xclasses
+### [XCLASSes](https://docs.typo3.org/typo3cms/CoreApiReference/ApiOverview/Xclasses/Index.html)
 
-* Früher über XClass (z.B. Realurl)
-* Heute über den ObjectManager
+* Früher über XClass-Konvention am Ende einer PHP Datei (z.B. *Realurl*)
+* Heute über den `ObjectManager`
 
 ```php
 $GLOBALS['TYPO3_CONF_VARS']['SYS']['Objects']['TYPO3\\CMS\\Core\\Resource\\ResourceStorage'] = array(
